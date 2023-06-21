@@ -1,42 +1,39 @@
-export function fetchBreeds() {
-  return fetch('https://api.thecatapi.com/v1/breeds', {
-    headers: {
-      'x-api-key':
-        'live_8iFJ0bMrHFUFWpFRitEuYrSXz8ohqNsUgTO4QDa1A0a93kKesyd5PokSqrb2ntrV',
-    },
-  })
+import Notiflix from 'notiflix';
+export function fetchBreeds(errorEl) {
+  let urlBreeds = 'https://api.thecatapi.com/v1/breeds';
+  return fetch(urlBreeds)
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to fetch breeds');
+        throw new Error(response.status);
       }
       return response.json();
     })
-    .then(data => data.map(breed => ({ id: breed.id, name: breed.name })))
-    .catch(error => {
-      console.error(error);
-      throw error;
-    });
+    .catch(error => Notiflix.Notify.failure(errorEl.textContent));
 }
 
-export function fetchCatByBreed(breedId) {
-  return fetch(
-    `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`,
-    {
-      headers: {
-        'x-api-key':
-          'live_8iFJ0bMrHFUFWpFRitEuYrSXz8ohqNsUgTO4QDa1A0a93kKesyd5PokSqrb2ntrV',
-      },
-    }
-  )
+function urlConstructor(breedId) {
+  const urlApi = 'https://api.thecatapi.com/v1/images/search?';
+  const apiKey = 'live_8iFJ0bMrHFUFWpFRitEuYrSXz8ohqNsUgTO4QDa1A0a93kKesyd5PokSqrb2ntrV';
+  const searchParams = new URLSearchParams({
+    breed_ids: breedId,
+    api_key: apiKey,
+  });
+  return urlApi + searchParams.toString();
+}
+
+export function fetchCatByBreed(breedId, errorEl, loaderEl, loaderS, selectEl) {
+  const urlBreed = urlConstructor(breedId);
+  return fetch(urlBreed)
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to fetch cat by breed');
+        throw new Error(response.status);
       }
       return response.json();
     })
-    .then(data => data[0])
     .catch(error => {
-      console.error(error);
-      throw error;
+      Notiflix.Notify.failure(errorEl.textContent);
+      loaderS.style.display = 'none';
+      loaderEl.style.display = 'none';
+      selectEl.style.display = 'block';
     });
 }
