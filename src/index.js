@@ -1,112 +1,62 @@
-import SlimSelect from 'slim-select';
+// import SlimSelect from 'slim-select';
+import Notiflix from 'notiflix';
 import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
 
-const selectEl = document.querySelector('.breed-select');
-const divEl = document.querySelector('.cat-info');
-const loaderEl = document.querySelector('.loader');
-const errorEl = document.querySelector('.error');
-const loaderSt = document.querySelector('.loader_style');
+const breedSelect = document.querySelector('.breed-select');
+const loader = document.querySelector('.loader');
+const error = document.querySelector('.error');
+const infoCat= document.querySelector('.info-cat');
 
-loaderEl.style.display = 'none';
-errorEl.style.display = 'none';
-let breeds = [];
+function createBreedOption(breed) {
+  error.style.display = 'none';
 
-function takeBreeds(response) {
-  for (let breed in response) {
-    breeds.push({ name: response[breed].name, id: response[breed].id });
-  }
+  const option = document.createElement('option');
+  option.value = breed.id;
+  option.textContent = breed.name;
+  breedSelect.appendChild(option);
 }
 
-async function addBreeds() {
-  try {
-    const response = await fetchBreeds(errorEl);
-    takeBreeds(response);
-    let listOfBreedsEl = breeds.map(element => {
-      let optionEl = document.createElement('option');
-      optionEl.value = element.id;
-      optionEl.textContent = element.name;
-      return optionEl;
-    });
-    selectEl.append(...listOfBreedsEl);
-  } catch (error) {
-    errorEl.textContent = 'Oops! Something went wrong! Try reloading the page!';
-  }
+function displayInfoCat(cat) {
+  infoCat.innerHTML = `
+    <img src="${cat.url}" alt="Cat Image" width= "500" />
+    <h3>${cat.breeds[0].name}</h3>
+    <p> ${cat.breeds[0].description}</p>
+    <p> ${cat.breeds[0].temperament}</p> `;
+  infoCat.style.display = 'block';
 }
 
-addBreeds();
+breedSelect.addEventListener('change', () => {
+  const selectedBreedId = breedSelect.value;
 
-function getElements(elements) {
-  if (elements[0] && elements[0].breeds) {
-    const name = elements[0].breeds[0].name;
-    const description = elements[0].breeds[0].description;
-    const temperament = elements[0].breeds[0].temperament;
-    const image = elements[0].url;
-    return {
-      name: name,
-      description: description,
-      temperament: temperament,
-      image: image,
-    };
+  if (selectedBreedId) {
+    loader.style.display = 'block';
+    infoCat.style.display = 'none';
+    error.style.display = 'none';
+
+    fetchCatByBreed(selectedBreedId)
+      .then(cat => {
+        displayInfoCat(cat);
+        loader.style.display = 'none';
+      })
+      .catch(() => {
+        Notiflix.Notify.failure(
+          `❌Такого пухнастика не вдалося знайти. Будь ласка перезавантажте сторінку! `
+        );
+        loader.style.display = 'none';
+      });
   } else {
-    return null;
+    infoCat.style.display = 'none';
   }
-}
-
-function showBreed(returnedPromise) {
-  if (!returnedPromise || returnedPromise.length === 0) {
-    divEl.innerHTML = '';
-    divEl.style.display = 'none';
-    loaderSt.style.display = 'none';
-    loaderEl.style.display = 'none';
-    errorEl.textContent = 'Oops! Something went wrong! Try reloading the page!';
-    errorEl.style.display = 'block';
-  } else {
-    const elements = getElements(returnedPromise);
-    if (elements) {
-      const { name, description, temperament, image } = elements;
-      let htmlEls = `<img src="${image}" alt="${name}" class="image">
-                        <div class="cat-details">
-                        <h1 class="title">${name}</h1>
-                        <p class="description">${description}</p>
-                        <p class="temperament"><b class="title-temperament">Temperament: </b>${temperament}</p> </div>`;
-
-      divEl.innerHTML = htmlEls;
-      loaderSt.style.display = 'none';
-      loaderEl.style.display = 'none';
-      errorEl.style.display = 'none';
-      divEl.style.display = 'block';
-    } else {
-      divEl.innerHTML = '';
-      divEl.style.display = 'none';
-      loaderSt.style.display = 'none';
-      loaderEl.style.display = 'none';
-      errorEl.textContent =
-        'Oops! Something went wrong! Try reloading the page!';
-      errorEl.style.display = 'block';
-    }
-  }
-}
-
-async function onSelectChange(event) {
-  const breedId = selectEl.options[selectEl.selectedIndex].value;
-  selectEl.style.display = 'none';
-  divEl.style.display = 'none';
-  loaderSt.style.display = 'block';
-  loaderEl.style.display = 'block';
-  const returnedPromise = await fetchCatByBreed(
-    breedId,
-    errorEl,
-    loaderEl,
-    loaderSt,
-    selectEl
-  );
-  showBreed(returnedPromise);
-  divEl.style.display = 'flex';
-  selectEl.style.display = 'block';
-}
-
-new SlimSelect({
-  select: '.select-breed',
 });
 
-selectEl.addEventListener('change', onSelectChange);
+fetchBreeds()
+  .then(breeds => {
+    breeds.forEach(breed => createBreedOption(breed));
+    loader.style.display = 'none';
+  })
+  .catch(() => {
+    Notiflix.Notify.warning(
+      `Oops! Something went wrong! Try reloading the page!`
+    );
+    loader.style.display = 'none';
+  });

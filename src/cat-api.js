@@ -1,39 +1,42 @@
-import Notiflix from 'notiflix';
-export function fetchBreeds(errorEl) {
-  let urlBreeds = 'https://api.thecatapi.com/v1/breeds';
-  return fetch(urlBreeds)
+export function fetchBreeds() {
+  return fetch('https://api.thecatapi.com/v1/breeds', {
+    headers: {
+      'x-api-key':
+        'live_8iFJ0bMrHFUFWpFRitEuYrSXz8ohqNsUgTO4QDa1A0a93kKesyd5PokSqrb2ntrV',
+    },
+  })
     .then(response => {
       if (!response.ok) {
-        throw new Error(response.status);
+        throw new Error('Failed to fetch breeds');
       }
       return response.json();
     })
-    .catch(error => Notiflix.Notify.failure(errorEl.textContent));
-}
-
-function urlConstructor(breedId) {
-  const urlApi = 'https://api.thecatapi.com/v1/images/search?';
-  const apiKey = 'live_8iFJ0bMrHFUFWpFRitEuYrSXz8ohqNsUgTO4QDa1A0a93kKesyd5PokSqrb2ntrV';
-  const searchParams = new URLSearchParams({
-    breed_ids: breedId,
-    api_key: apiKey,
-  });
-  return urlApi + searchParams.toString();
-}
-
-export function fetchCatByBreed(breedId, errorEl, loaderEl, loaderS, selectEl) {
-  const urlBreed = urlConstructor(breedId);
-  return fetch(urlBreed)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(response.status);
-      }
-      return response.json();
-    })
+    .then(data => data.map(breed => ({ id: breed.id, name: breed.name })))
     .catch(error => {
-      Notiflix.Notify.failure(errorEl.textContent);
-      loaderS.style.display = 'none';
-      loaderEl.style.display = 'none';
-      selectEl.style.display = 'block';
+      console.error(error);
+      throw error;
+    });
+}
+
+export function fetchCatByBreed(breedId) {
+  return fetch(
+    `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`,
+    {
+      headers: {
+        'x-api-key':
+          'live_8iFJ0bMrHFUFWpFRitEuYrSXz8ohqNsUgTO4QDa1A0a93kKesyd5PokSqrb2ntrV',
+      },
+    }
+  )
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch cat by breed');
+      }
+      return response.json();
+    })
+    .then(data => data[0])
+    .catch(error => {
+      console.error(error);
+      throw error;
     });
 }
